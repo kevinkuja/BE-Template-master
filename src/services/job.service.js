@@ -2,7 +2,6 @@ const { Job, Contract, sequelize } = require('../model')
 const { Op } = require('sequelize')
 const profileService = require('./profile.service')
 
-
 async function getActiveUnpaidJobs(profileId, transaction) {
 	return await Job.findAll(
 		{
@@ -24,23 +23,23 @@ async function getActiveUnpaidJobs(profileId, transaction) {
 }
 
 async function getUnpaidJob(job_id, profileId, t) {
-    return await Job.findOne(
-        {
-            where: {
-                id: job_id,
-                paid: {
-                    [Op.not]: true,
-                },
-            },
-            include: {
-                model: Contract,
-                where: {
-                    clientId: profileId,
-                },
-            },
-        },
-        { transaction: t }
-    )
+	return await Job.findOne(
+		{
+			where: {
+				id: job_id,
+				paid: {
+					[Op.not]: true,
+				},
+			},
+			include: {
+				model: Contract,
+				where: {
+					clientId: profileId,
+				},
+			},
+		},
+		{ transaction: t }
+	)
 }
 
 async function payJob(job_id, profileId) {
@@ -85,4 +84,4 @@ async function depositToUser(userId, amount) {
 	})
 }
 
-module.exports = { getActiveUnpaidJobs, getUnpaidJob, payJob, depositToUser}
+module.exports = { getActiveUnpaidJobs, getUnpaidJob, payJob, depositToUser }

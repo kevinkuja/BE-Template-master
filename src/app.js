@@ -47,7 +47,7 @@ app.post('/jobs/:job_id/pay', getProfile, async (req, res) => {
 		await jobService.payJob(job_id, req.profile.id)
 		res.status(200).end()
 	} catch (error) {
-        console.log(error)
+		console.log(error)
 		return res.status(400).end()
 	}
 })
