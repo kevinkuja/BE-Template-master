@@ -6,10 +6,7 @@ const app = express()
 app.use(bodyParser.json())
 app.set('sequelize', sequelize)
 app.set('models', sequelize.models)
-const { Op } = require('sequelize')
-const { Job, Contract } = require('./model')
 
-const profileService = require('./services/profile.service')
 const jobService = require('./services/job.service')
 const adminService = require('./services/admin.service')
 const contractService = require('./services/contract.service')
@@ -47,32 +44,10 @@ app.post('/jobs/:job_id/pay', getProfile, async (req, res) => {
 	const { job_id } = req.params
 
 	try {
-		await sequelize.transaction(async (t) => {
-			const job = await jobService.getUnpaidJob(job_id, req.profile.id, t)
-
-			if (!job) return res.status(404).end()
-			const client = await profileService.getProfile(job.Contract.ClientId, t)
-			if (!client) return res.status(404).end()
-
-			const contractor = await profileService.getProfile(
-				job.Contract.ContractorId,
-				t
-			)
-			if (!contractor) return res.status(404).end()
-			//Check condition
-			if (client.balance < job.price) return res.status(400).end()
-
-			await profileService.updateBalance(contractor, job.price, t)
-			await profileService.updateBalance(client, -job.price, t)
-
-			await Job.update(
-				{ paid: true, paymentDate: new Date() },
-				{ where: { id: job_id } },
-				{ transaction: t }
-			)
-			return res.status(200).end()
-		})
+		await jobService.payJob(job_id, req.profile.id)
+		res.status(200).end()
 	} catch (error) {
+        console.log(error)
 		return res.status(400).end()
 	}
 })
@@ -84,23 +59,8 @@ app.post('/balances/deposit/:userId', getProfile, async (req, res) => {
 	const { userId } = req.params
 	const { amount } = req.body
 	try {
-		await sequelize.transaction(async (t) => {
-			const activeUnpaidJobs = await jobService.getActiveUnpaidJobs(userId, t)
-
-			const client = await profileService.getProfile(userId, t)
-			if (!client || client.type != 'client') return res.status(404).end()
-
-			const debt = activeUnpaidJobs.reduce(
-				(amount, job) => amount + job.price,
-				0
-			)
-			//Check condition
-			if (amount > debt * 0.25) return res.status(400).end()
-
-			await profileService.updateBalance(client, amount, t)
-
-			return res.status(200).end()
-		})
+		await jobService.depositToUser(userId, amount)
+		return res.status(200).end()
 	} catch (error) {
 		return res.status(400).end()
 	}
